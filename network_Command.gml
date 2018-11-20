@@ -1,7 +1,17 @@
 #define network_Command
+/*
+ * Commands the network. Currently using a server-client model
+ * to initialize connection, but runtime is otherwise effectively
+ * non-authoritative. Both players can send requests to the other 
+ * to rollback and resync. 
+ */
 
 
 #define network_Get_Latency
+/*
+ * network_Get_Latency();
+ * Get RTL based on current_time
+ */
 var sock_id = -1;
 if mode = "server"
     sock_id = global.opponent_sock;
@@ -17,7 +27,12 @@ buffer_delete(buff);
 alarm[1] = room_speed;
 
 #define network_Init_Sync
-//network_Init_Sync();
+/*
+ * network_Init_Sync();
+ * A players sends the initial request to syncronize the games
+ * during the first few frames of the round before either player 
+ * is able to effect the game with their inputs. 
+ */
 var sock_id = -1;
 if mode = "server"
     sock_id = global.opponent_sock;
@@ -33,6 +48,13 @@ buffer_delete(buff);
 
 
 #define network_Send_MenuInput
+/*
+ * network_Send_MenuInput();
+ * Sends local input across the network; currently using separate scripts for menu
+ * and player due to fatal error caused by menus not currently being programmed to 
+ * accept input from the analog stick. Considering combing scripts once issues are 
+ * resolved. 
+ */
 var AA = button_check_pressed(global.gamepad[global.ppos],global.pA[global.ppos]);
 var BB = button_check_pressed(global.gamepad[global.ppos],global.pB[global.ppos]);
 var CC = button_check_pressed(global.gamepad[global.ppos],global.pC[global.ppos]);
@@ -66,6 +88,12 @@ network_send_packet(sock_id,buff,buffer_tell(buff));
 buffer_delete(buff);
 
 #define network_Send_PlayerInput
+/*
+ * network_Send_PlayerINput();
+ * Sends local player input across the network; current implementation was designed
+ * to test whether the desyncs were caused by the way button_check_pressed was check-
+ * ing against network inputs; problem remains. 
+ */
 var process = -1;
 switch(argument0){
     case 0: process = button_check; break;
@@ -106,6 +134,17 @@ network_send_packet(sock_id,buff,buffer_tell(buff));
 buffer_delete(buff);
 
 #define network_Receive_Input
+/*
+ * network_Receive_Input();
+ * Partially deprecated until a more consistent, less buggy
+ * sycnronization method is created. Applies input that's received across
+ * the network, and then, if in game, would tell the sender to resync if 
+ * the games weren't synced. Because the inputs are sent during the begin
+ * step event, the receiver always has the correct inputs, but the sender
+ * has a desynced game state for a frame, likely because the sender receives
+ * input from the receiver saying the sender hasn't pushed his button yet.
+ * This sync method is currently removed as the synStat is never "DesyncERROR"
+ */
 var sock_id = -1;
 if mode = "server"
     sock_id = global.opponent_sock;
@@ -129,6 +168,15 @@ if room != roo_MainMenu{
 }
 
 #define network_Update_InputState
+/*
+ * network_Update_InputState();
+ * Sends ev_save_game_state() across the network so players can
+ * confirm they have the same input for each frame. Currently 
+ * players show a desynced frame whenever the input state changes for 
+ * one frame, but the receiver is always synced. If both players are 
+ * pressing buttons, both games will be desynced because both players
+ * would be sending inputs and thus experiencing the desync. 
+ */
 var sock_id = -1;
 if mode = "server"
     sock_id = global.opponent_sock;
