@@ -1,4 +1,8 @@
 #define network_Create
+/*
+ * network_Create():
+ * Generates necessary variables for network to functioning
+ */
 global.gameplay_port = 11001;
 global.latency = -1;
 global.opponent_id = "";
@@ -44,6 +48,13 @@ global.refresh[1] = 0; //input checksum delay
 global.init_round = 0;
 
 #define network_Setting
+/*
+ * network_Setting();
+ * Sets the network controller to either a server or client; this is functionally
+ * just a way to separate players into two groups for match making. Current 
+ * implementation is for testing purposes primarily; will update later to have players
+ * alternate between the two server types depending on functionality of that framework
+ */
 switch(mode){ 
     case "server":
         global.gameplay_server = network_create_server(server_type,global.gameplay_port,1);
@@ -63,7 +74,14 @@ switch(mode){
 network_Get_Latency();
 networkOn = true;
 
-#define network_Server
+#define network_Server.
+/*
+ * network_Server();
+ * Controls the server side of the network. Server and client
+ * are functionally the same as game is P2P, but server does a bit of
+ * extra work getting the two players syncornized. 
+ */
+
 var sock = ds_map_find_value(async_load,"socket");
 var ip = ds_map_find_value(async_load,"ip");
 var type = ds_map_find_value(async_load,"type");
