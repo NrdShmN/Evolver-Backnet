@@ -1,7 +1,21 @@
 #define Evolver_BackNet
+/*
+ * Evolver_BackNet();
+ * Initially, I tried using GGPO for Evolver, but due to constraints
+ * with how C++ can give GM:S data, I've since decided to create my 
+ * own rollback netcode using GML by studying various rollback 
+ * architectures. 
+ */
 
 
 #define ev_save_game_state
+/*
+ * ev_save_game_state();
+ * This generates a checksum to send across the network to verify both
+ * players have the same set of inputs for a given frame. If there's a 
+ * mismatch, the mismatched party is instructed to return back to the 
+ * last matching frame. 
+ */
 var chksum = "";
 
 for(i=0;i<2;i++){
@@ -27,11 +41,19 @@ for(i=0;i<2;i++){
 return base64_encode(chksum);
 
 #define ev_load_game_state
+//deprecated for now, may use later
 
 
 #define ev_sgs_cb
 /*
  * ev_sgs_cb
+ * Saves the entire gamestate locally for later loading should the games 
+ * desync when ev_save_game_state is received. Saves the positions of  
+ * the two players and their current actions, physics variables, etc. 
+ *
+ * Needs to be updates to include current hitboxes and their information
+ * and to control round timer to adjust based on delays; will fix once
+ * syncronization is consistent. . .
  */
 var pstates = ds_map_create();
 
@@ -138,6 +160,16 @@ return _json;
 #define ev_lgs_cb
 /*
  * ev_lgs_cb
+ * Load the entire gamestate we saved with  ev_sgs_cb; it is called when
+ * ev_save_game_state does not match across the network. With current
+ * implementation, there is a brief desync during the exact moment a
+ * key is pressed on the sender side, but not on the receiver side. 
+ * As a result, I've set the receiver to send a request to ev_lgs_cb 
+ * back when the games desync, but this is buggy and slow at best.
+ *
+ * Needs to be updates to include current hitboxes and their information
+ * and to control round timer to adjust based on delays; will fix once
+ * syncronization is consistent
  */
 var pstates = json_decode(argument0);
 if pstates < 0
@@ -323,7 +355,10 @@ for(i=0;i<instance_number(obj_PlayerParent);i++){
 ds_map_destroy(pstates);
 
 #define ev_add_local_inputs
-//ev_add_local_inputs(A,B,C,D,u,d,l,r,L1,L2,R1,R2,start,select,socket);
+/*
+ * ev_add_local_inputs(A,B,C,D,u,d,l,r,L1,L2,R1,R2,start,select,socket);
+ * Sends local inputs across the network
+ */
 
 input[0] = argument0;
 input[1] = argument1;
@@ -346,9 +381,12 @@ for(i=0;i<14;i++){
     buffer_write(inputs,buffer_s8,input[i]);
 }
 
-
-
 #define ev_add_network_inputs
+/*
+ * ev_add_network_inputs();
+ * Stores input to be called during player_Controller_AdvanceFrame();
+ */
+
 var aPos = abs(global.ppos-1);
         
 for(i=0;i<14;i++){
@@ -382,4 +420,3 @@ global.pR3[aPos] = false;
 if object_index = ctrl_Menu
     global.gamepad[aPos] = 1001;
 else global.gamepad[aPos] = 1000;
-#define ev_add_local_inputs_pressed
